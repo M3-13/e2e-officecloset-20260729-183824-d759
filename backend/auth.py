@@ -24,6 +24,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def _create_token(user_id: int) -> str:
     cfg = get_config()
     secret = cfg["JWT_SECRET"]
+    if not secret:
+        raise RuntimeError(
+            "JWT_SECRET is not set. Configure the JWT_SECRET environment variable "
+            "or use RUN.json to generate one per run."
+        )
     expiry_seconds = int(cfg["JWT_EXPIRY"])
     return jwt.encode(
         {"sub": str(user_id), "exp": datetime.now(UTC) + timedelta(seconds=expiry_seconds)},
@@ -38,6 +43,11 @@ def get_current_user(
 ) -> User:
     cfg = get_config()
     secret = cfg["JWT_SECRET"]
+    if not secret:
+        raise RuntimeError(
+            "JWT_SECRET is not set. Configure the JWT_SECRET environment variable "
+            "or use RUN.json to generate one per run."
+        )
 
     try:
         payload = jwt.decode(credentials.credentials, secret, algorithms=["HS256"])
