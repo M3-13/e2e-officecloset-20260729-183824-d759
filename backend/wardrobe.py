@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/wardrobe", tags=["wardrobe"])
 
 _NAME_RE = re.compile(r"^[a-zA-Z0-9äöüßÄÖÜ \-_.,;:!?&()/+\#'\"]{1,100}$")
+_MAX_NOTE_LENGTH = 2000
 
 
 def _validate_name(name: str) -> None:
@@ -24,6 +25,25 @@ def _validate_name(name: str) -> None:
             status_code=400,
             detail="Name must be 1-100 characters and contain only letters, digits, spaces, and basic punctuation.",
         )
+
+
+def _validate_note(note: str | None) -> str | None:
+    if note is None:
+        return None
+    stripped = note.strip()
+    if not stripped:
+        return None
+    if len(stripped) > _MAX_NOTE_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Note must be at most {_MAX_NOTE_LENGTH} characters.",
+        )
+    if "<" in stripped or ">" in stripped:
+        raise HTTPException(
+            status_code=400,
+            detail="Note must not contain HTML tags.",
+        )
+    return stripped
 
 
 def _validate_category(category: str) -> Category:
@@ -54,6 +74,7 @@ def create_item(
 ) -> ClothingItemResponse:
     _validate_name(name)
     cat = _validate_category(category)
+    validated_note = _validate_note(note)
 
     image_path = save_image(image)
 
@@ -62,7 +83,7 @@ def create_item(
         name=name,
         category=cat,
         image_path=image_path,
-        note=note,
+        note=validated_note,
     )
     db.add(item)
     db.commit()
@@ -116,10 +137,11 @@ def update_item(
 
     _validate_name(name)
     cat = _validate_category(category)
+    validated_note = _validate_note(note)
 
     item.name = name
     item.category = cat
-    item.note = note
+    item.note = validated_note
 
     if image and image.filename:
         old_path = item.image_path
