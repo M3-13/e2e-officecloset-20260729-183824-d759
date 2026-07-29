@@ -1,6 +1,7 @@
 import enum
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -49,6 +50,7 @@ class Outfit(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     owner = relationship("User", back_populates="outfits")
     items = relationship("OutfitItem", back_populates="outfit", cascade="all, delete-orphan")

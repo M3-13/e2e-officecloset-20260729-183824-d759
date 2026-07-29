@@ -93,10 +93,10 @@ serviert es dann automatisch unter `/`.
 
 | Methode | Pfad      | Body                                              | Response          | Status |
 |---------|-----------|---------------------------------------------------|-------------------|--------|
-| POST    | `/`       | `{"name": "...", "item_ids": [...]}`              | `OutfitResponse`  | 201    |
+| POST    | `/`       | `{"name": "...", "clothing_item_ids": [...]}`              | `OutfitResponse`  | 201    |
 | GET     | `/`       | –                                                 | `[OutfitResponse]`| 200    |
 | GET     | `/{id}`   | –                                                 | `OutfitResponse`  | 200    |
-| PUT     | `/{id}`   | `{"name": "...", "item_ids": [...]}`              | `OutfitResponse`  | 200    |
+| PUT     | `/{id}`   | `{"name": "...", "clothing_item_ids": [...]}`              | `OutfitResponse`  | 200    |
 | DELETE  | `/{id}`   | –                                                 | –                 | 204    |
 
 ### Health
