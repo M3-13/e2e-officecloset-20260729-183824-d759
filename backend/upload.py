@@ -40,6 +40,5 @@ def save_image(file: UploadFile) -> str:
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    relative_path = f"uploads/{filename}"
-    logger.info("Image saved: %s", relative_path)
-    return relative_path
+    logger.info("Image saved: %s", filename)
+    return filename

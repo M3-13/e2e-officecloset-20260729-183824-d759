@@ -252,7 +252,7 @@ class TestOutfitsCRUD:
         user_id: int,
         name: str = "Test Shirt",
         category: Category = Category.OBERTOPS,
-        image_path: str = "uploads/test.jpg",
+        image_path: str = "test.jpg",
     ) -> ClothingItem:
         from database import _get_sessionlocal
 

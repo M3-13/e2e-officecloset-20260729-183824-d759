@@ -140,13 +140,13 @@ export default function OutfitCreatorPage() {
       if (editId) {
         await api.updateOutfit(parseInt(editId, 10), {
           name: outfitName.trim(),
-          item_ids: itemIds,
+          clothing_item_ids: itemIds,
         });
         setToast({ message: "Outfit aktualisiert!", variant: "success" });
       } else {
         await api.createOutfit({
           name: outfitName.trim(),
-          item_ids: itemIds,
+          clothing_item_ids: itemIds,
         });
         setToast({ message: "Outfit gespeichert!", variant: "success" });
       }

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Link, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
@@ -32,15 +32,15 @@ function Navbar() {
           Hollywood Closet
         </Link>
         <div className="navbar-links">
-          <Link to="/" className="navbar-link">
+          <NavLink to="/" end className={({ isActive }) => `navbar-link${isActive ? " active" : ""}`}>
             Home
-          </Link>
-          <Link to="/wardrobe" className="navbar-link">
+          </NavLink>
+          <NavLink to="/wardrobe" className={({ isActive }) => `navbar-link${isActive ? " active" : ""}`}>
             Garderobe
-          </Link>
-          <Link to="/outfits" className="navbar-link">
+          </NavLink>
+          <NavLink to="/outfits" className={({ isActive }) => `navbar-link${isActive ? " active" : ""}`}>
             Outfits
-          </Link>
+          </NavLink>
           {isAuthenticated ? (
             <button
               type="button"
