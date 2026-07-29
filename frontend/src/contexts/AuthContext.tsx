@@ -6,6 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { login as apiLogin, register as apiRegister, getMe } from "../api/client";
 import type { UserResponse } from "../api/client";
 
 interface AuthContextType {
@@ -32,10 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    import("../api/client")
-      .then((api) =>
-        api.getMe().then((u) => setUser(u))
-      )
+    getMe()
+      .then((u) => setUser(u))
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY);
       })
@@ -43,19 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginFn = useCallback(async (email: string, password: string) => {
-    const { login: apiLogin } = await import("../api/client");
     const data = await apiLogin(email, password);
     localStorage.setItem(TOKEN_KEY, data.access_token);
-    const { getMe } = await import("../api/client");
     const u = await getMe();
     setUser(u);
   }, []);
 
   const registerFn = useCallback(async (email: string, password: string) => {
-    const { register: apiRegister } = await import("../api/client");
     const data = await apiRegister(email, password);
     localStorage.setItem(TOKEN_KEY, data.access_token);
-    const { getMe } = await import("../api/client");
     const u = await getMe();
     setUser(u);
   }, []);
