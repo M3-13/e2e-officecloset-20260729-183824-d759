@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
@@ -41,8 +41,8 @@ class ClothingItemResponse(BaseModel):
 
 
 class OutfitCreate(BaseModel):
-    name: str
-    item_ids: list[int]
+    name: str = Field(min_length=1, max_length=100)
+    clothing_item_ids: list[int] = Field(min_length=2)
 
 
 class OutfitResponse(BaseModel):
@@ -55,5 +55,5 @@ class OutfitResponse(BaseModel):
 
 
 class OutfitUpdate(BaseModel):
-    name: str | None = None
-    item_ids: list[int] | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    clothing_item_ids: list[int] | None = Field(default=None, min_length=2)
