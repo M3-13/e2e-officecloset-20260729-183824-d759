@@ -1,19 +1,31 @@
 VERDICT: BUGS_FOUND
 
-Der Testlauf zeigt zwei klar beobachtbare Produktfehler, die die Auslieferung unbrauchbar machen.
+**Bug 1: CSP‑Header fehlt**  
+- **Symptom**: Der Content‑Security‑Policy‑Header wird in den HTTP‑Antworten nicht gesetzt – Sicherheitsanforderung AC‑08/AC‑16 verletzt.  
+- **Repro**: Playwright‑Test `e2e/security.spec.cjs` Zeile 29‑41 (Test „AC‑08: CSP header is set on responses“) prüft eine Antwort; `cspFound` bleibt `false`.  
+- **Evidence**: `expect(cspFound).toBe(true);` schlägt fehl, da kein CSP‑Header vorhanden. Siehe Fehler‑Log: `Security / XSS › AC-08: CSP header is set on responses` failed.  
+- **Suspected file(s)**: `backend/main.py` – `CSPMiddleware` wird zwar registriert, liefert aber für die geprüfte Route (Frontend‑Assets) möglicherweise keinen Header oder wird durch den Vite‑Proxy nicht durchgereicht.  
+- **Severity**: high
 
-- **Titel:** CSP-Header wird nicht gesendet
-  **Symptom:** Die Anwendung liefert keinen `Content-Security-Policy`-Header in HTTP-Antworten aus. Verletzt AC-16.
-  **Repro:** E2E-Test `security.spec.cjs` registriert alle response-Header und prüft, ob ein CSP-Header vorhanden ist. Der Test bricht mit `expect(cspFound).toBe(true)` ab, weil `cspFound` den Wert `false` behält.
-  **Evidence:** > `expect(cspFound).toBe(true);` — `Expected: true`, `Received: false` (Testbericht, `security.spec.cjs:41`)
-  **Suspected file(s):** `backend/main.py` (CSPMiddleware wird möglicherweise nicht auf alle Antworten angewendet, z. B. auf statische Dateien oder die Startseite)
-  **Severity:** high
+**Bug 2: Registrierung & Anmeldung leiten nicht zur Garderobe weiter**  
+- **Symptom**: Nach erfolgreichem Absenden des Registrierungs‑ oder Login‑Formulars bleibt die Seite auf der Login‑/Registrierungsseite hängen; der Browser navigiert nicht wie erwartet nach `/wardrobe`. Dadurch scheitern alle geschützten End‑to‑End‑Tests mit Timeout.  
+- **Repro**: Jeder Playwright‑Test, der die Hilfsfunktion `registerAndGoToWardrobe` oder `loginAndGoToWardrobe` aufruft (z. B. `e2e/auth.spec.cjs:44`, `e2e/wardrobe.spec.cjs:141`, `e2e/outfits.spec.cjs:56`).  
+- **Evidence**:  
+  ```
+  Error: page.waitForURL: Test timeout of 12000ms exceeded.
+  =========================== logs ===========================
+  waiting for navigation to "**/wardrobe" until "load"
+  ============================================================
 
-- **Titel:** Ausgeliefertes Frontend kann das Backend nicht erreichen – gesamte Benutzerinteraktion blockiert
-  **Symptom:** Nach dem Absenden des Login-Formulars bleibt der Benutzer auf der Login-Seite; es erfolgt keine Weiterleitung zur Garderobe. Sämtliche E2E-Tests, die eine Anmeldung voraussetzen (Authentifizierung, Outfits, Kleiderschrank), scheitern mit Timeout bei `page.waitForURL('**/wardrobe')` oder beim Warten auf Buttons, weil die API-Aufrufe nie beantwortet werden. Das Produkt ist im ausgelieferten Zustand nicht bedienbar.
-  **Repro:** Produktions-Build (`dist`) ausliefern und versuchen, sich über das Formular einzuloggen. Die Vite-Entwicklungsproxys laufen nicht; `VITE_API_URL` ist nicht auf den Backend-Port (8000) gesetzt. Die API-Anfragen gehen an den Ursprung des Frontend-Servers (Port 5173) und schlagen fehl.
-  **Evidence:** Mehrere Timeout-Fehler in den E2E-Tests, z. B.:  
-  > `page.waitForURL: Test timeout of 12000ms exceeded.`  
-  > (auth.spec.cjs:19, outfits.spec.cjs:19, wardrobe.spec.cjs:21, jeweils nach `page.click('button[type="submit"]')`)
-  **Suspected file(s):** `frontend/src/api/client.ts` (`API_BASE` nutzt `VITE_API_URL` oder leeren String), `frontend/vite.config.ts` (Proxy-Einstellungen nur für `serve`-Modus), fehlende Umgebungsvariable `VITE_API_URL` im Produktions-Build
-  **Severity:** critical
+  > 21 |   await page.waitForURL('**/wardrobe', { timeout: 15000 });
+  ```
+  (Beispiel: `e2e/wardrobe.spec.cjs:21:14`).  
+- **Suspected file(s)**: `frontend/src/pages/LoginPage.tsx`, `frontend/src/pages/RegisterPage.tsx`, `frontend/src/contexts/AuthContext.tsx` – der Authentifizierungs‑Flow löst nach dem erfolgreichen API‑Aufruf keine Navigation aus, weil entweder die Zustandsaktualisierung (`isAuthenticated`) nicht korrekt erfolgt oder die `useEffect`‑Weiterleitung nicht ausgelöst wird. Möglicherweise verhindert ein CORS‑Fehler oder eine fehlerhafte Token‑Speicherung den Abschluss.  
+- **Severity**: critical (blockiert alle geschützten Funktionen: Garderobe, Outfit‑Creator, Abmelden)
+
+**Bug 3: Fehlende Implementierung aus Merge Request !23**  
+- **Symptom**: Das Ticket MR !23 wurde nicht in den Sprint‑Build übernommen. Die darin spezifizierte Funktionalität fehlt im ausgelieferten Produkt – es handelt sich um eine Lücke gegenüber der vereinbarten Spezifikation.  
+- **Repro**: Nicht direkt ausführbar, da der Branch `mr-23` nicht gemerged wurde.  
+- **Evidence**: Im Testprotokoll unter „PROMISED BUT NOT DELIVERED“ explizit aufgeführt: `MR !23 — left open, never merged; its changes are NOT in the product`.  
+- **Suspected file(s)**: Unbekannt (der Branch wurde nicht integriert).  
+- **Severity**: high
