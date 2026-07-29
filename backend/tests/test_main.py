@@ -68,16 +68,16 @@ def test_auth_delete_account_returns_501() -> None:
         assert response.status_code == 501
 
 
-def test_wardrobe_list_returns_501() -> None:
+def test_wardrobe_list_requires_auth() -> None:
     with TestClient(app) as client:
         response = client.get("/api/wardrobe/")
-        assert response.status_code == 501
+        assert response.status_code == 401
 
 
-def test_wardrobe_get_item_returns_501() -> None:
+def test_wardrobe_get_item_requires_auth() -> None:
     with TestClient(app) as client:
         response = client.get("/api/wardrobe/1")
-        assert response.status_code == 501
+        assert response.status_code == 401
 
 
 def test_lifespan_creates_tables() -> None:
