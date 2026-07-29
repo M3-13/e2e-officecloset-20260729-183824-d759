@@ -23,7 +23,18 @@ function ProtectedRoute() {
 }
 
 function Navbar() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, deleteAccount } = useAuth();
+
+  async function handleDeleteAccount() {
+    if (!window.confirm("Möchten Sie Ihr Konto wirklich löschen? Alle Ihre Kleidungsstücke, Outfits und Bilder werden unwiderruflich entfernt.")) {
+      return;
+    }
+    try {
+      await deleteAccount();
+    } catch {
+      alert("Fehler beim Löschen des Kontos.");
+    }
+  }
 
   return (
     <nav className="navbar">
@@ -42,13 +53,22 @@ function Navbar() {
             Outfits
           </Link>
           {isAuthenticated ? (
-            <button
-              type="button"
-              className="navbar-link navbar-btn"
-              onClick={logout}
-            >
-              Abmelden
-            </button>
+            <>
+              <button
+                type="button"
+                className="navbar-link navbar-btn navbar-btn-danger"
+                onClick={handleDeleteAccount}
+              >
+                Konto löschen
+              </button>
+              <button
+                type="button"
+                className="navbar-link navbar-btn"
+                onClick={logout}
+              >
+                Abmelden
+              </button>
+            </>
           ) : (
             <Link to="/login" className="navbar-link">
               Anmelden

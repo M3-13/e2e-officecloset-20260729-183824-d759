@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { UserResponse } from "../api/client";
-import { login as apiLogin, register as apiRegister, getMe } from "../api/client";
+import { login as apiLogin, register as apiRegister, getMe, deleteAccount as apiDeleteAccount } from "../api/client";
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, privacyAccepted: boolean) => Promise<void>;
   logout: () => void;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -54,6 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const deleteAccountFn = useCallback(async () => {
+    await apiDeleteAccount();
+    localStorage.removeItem("token");
+    setUser(null);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -63,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login: loginFn,
         register: registerFn,
         logout: logoutFn,
+        deleteAccount: deleteAccountFn,
       }}
     >
       {children}
