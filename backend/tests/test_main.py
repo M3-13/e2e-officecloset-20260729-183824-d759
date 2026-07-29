@@ -181,6 +181,72 @@ class TestOutfitsCRUD:
 
         assert resp.status_code == 422
 
+    def test_create_outfit_name_rejects_xss(self):
+        user = self._create_user("xss1@test.com")
+        item1 = self._create_item(user.id, "Shirt", Category.OBERTOPS)
+        item2 = self._create_item(user.id, "Jeans", Category.HOSEN)
+
+        with TestClient(app) as client:
+            resp = client.post(
+                "/api/outfits/",
+                json={
+                    "name": "<script>alert(1)</script>",
+                    "clothing_item_ids": [item1.id, item2.id],
+                },
+                headers=_auth_headers(user.id),
+            )
+
+        assert resp.status_code == 422
+
+    def test_create_outfit_name_rejects_angle_brackets(self):
+        user = self._create_user("xss2@test.com")
+        item1 = self._create_item(user.id, "Shirt", Category.OBERTOPS)
+        item2 = self._create_item(user.id, "Jeans", Category.HOSEN)
+
+        with TestClient(app) as client:
+            resp = client.post(
+                "/api/outfits/",
+                json={"name": "bad>name", "clothing_item_ids": [item1.id, item2.id]},
+                headers=_auth_headers(user.id),
+            )
+
+        assert resp.status_code == 422
+
+    def test_create_outfit_name_rejects_control_chars(self):
+        user = self._create_user("xss3@test.com")
+        item1 = self._create_item(user.id, "Shirt", Category.OBERTOPS)
+        item2 = self._create_item(user.id, "Jeans", Category.HOSEN)
+
+        with TestClient(app) as client:
+            resp = client.post(
+                "/api/outfits/",
+                json={"name": "bad\x00name", "clothing_item_ids": [item1.id, item2.id]},
+                headers=_auth_headers(user.id),
+            )
+
+        assert resp.status_code == 422
+
+    def test_update_outfit_name_rejects_xss(self):
+        user = self._create_user("xss4@test.com")
+        item1 = self._create_item(user.id, "Shirt", Category.OBERTOPS)
+        item2 = self._create_item(user.id, "Jeans", Category.HOSEN)
+
+        with TestClient(app) as client:
+            create_resp = client.post(
+                "/api/outfits/",
+                json={"name": "Safe Name", "clothing_item_ids": [item1.id, item2.id]},
+                headers=_auth_headers(user.id),
+            )
+            outfit_id = create_resp.json()["id"]
+
+            resp = client.put(
+                f"/api/outfits/{outfit_id}",
+                json={"name": "<img src=x onerror=alert(1)>"},
+                headers=_auth_headers(user.id),
+            )
+
+        assert resp.status_code == 422
+
     def test_create_outfit_items_must_belong_to_user(self):
         user1 = self._create_user("owner@test.com")
         user2 = self._create_user("other@test.com")
