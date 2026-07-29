@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+
 
 def get_config() -> dict[str, str]:
     return {

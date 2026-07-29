@@ -37,6 +37,7 @@ class ClothingItem(Base):
     category = Column(Enum(Category), nullable=False)
     image_path = Column(String(512), nullable=False)
     note = Column(Text, nullable=True, default=None)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     owner = relationship("User", back_populates="clothing_items")
     outfit_items = relationship(
