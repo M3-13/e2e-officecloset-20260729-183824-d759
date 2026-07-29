@@ -38,36 +38,6 @@ def test_health_endpoint_returns_200() -> None:
         assert response.json() == {"status": "ok"}
 
 
-def test_auth_register_returns_501() -> None:
-    with TestClient(app) as client:
-        response = client.post(
-            "/api/auth/register",
-            json={"email": "test@example.com", "password": "secret123"},
-        )
-        assert response.status_code == 501
-
-
-def test_auth_login_returns_501() -> None:
-    with TestClient(app) as client:
-        response = client.post(
-            "/api/auth/login",
-            json={"email": "test@example.com", "password": "secret123"},
-        )
-        assert response.status_code == 501
-
-
-def test_auth_me_returns_501() -> None:
-    with TestClient(app) as client:
-        response = client.get("/api/auth/me")
-        assert response.status_code == 501
-
-
-def test_auth_delete_account_returns_501() -> None:
-    with TestClient(app) as client:
-        response = client.delete("/api/auth/account")
-        assert response.status_code == 501
-
-
 def test_wardrobe_list_requires_auth() -> None:
     with TestClient(app) as client:
         response = client.get("/api/wardrobe/")
@@ -78,6 +48,166 @@ def test_wardrobe_get_item_requires_auth() -> None:
     with TestClient(app) as client:
         response = client.get("/api/wardrobe/1")
         assert response.status_code == 401
+
+
+class TestAuth:
+    @classmethod
+    def setup_class(cls):
+        os.environ["JWT_SECRET"] = TEST_SECRET
+        cls.engine = _create_test_db()
+
+    @classmethod
+    def teardown_class(cls):
+        os.environ.pop("JWT_SECRET", None)
+
+    def _register(self, client: TestClient, email: str, password: str = "password123"):
+        return client.post(
+            "/api/auth/register",
+            json={"email": email, "password": password},
+        )
+
+    def _login(self, client: TestClient, email: str, password: str = "password123"):
+        return client.post(
+            "/api/auth/login",
+            json={"email": email, "password": password},
+        )
+
+    def test_register_success(self):
+        with TestClient(app) as client:
+            resp = self._register(client, "newuser@test.com")
+        assert resp.status_code == 201
+        data = resp.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+
+    def test_register_duplicate(self):
+        email = "dup@test.com"
+        with TestClient(app) as client:
+            r1 = self._register(client, email)
+            assert r1.status_code == 201
+            r2 = self._register(client, email)
+        assert r2.status_code == 409
+
+    def test_register_short_password(self):
+        with TestClient(app) as client:
+            resp = client.post(
+                "/api/auth/register",
+                json={"email": "short@test.com", "password": "1234567"},
+            )
+        assert resp.status_code == 422
+
+    def test_register_invalid_email(self):
+        with TestClient(app) as client:
+            resp = client.post(
+                "/api/auth/register",
+                json={"email": "not-an-email", "password": "password123"},
+            )
+        assert resp.status_code == 422
+
+    def test_login_success(self):
+        email = "login1@test.com"
+        with TestClient(app) as client:
+            self._register(client, email)
+            resp = self._login(client, email)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+
+    def test_login_wrong_password(self):
+        email = "login2@test.com"
+        with TestClient(app) as client:
+            self._register(client, email)
+            resp = self._login(client, email, "wrongpassword")
+        assert resp.status_code == 401
+
+    def test_login_nonexistent_user(self):
+        with TestClient(app) as client:
+            resp = self._login(client, "nobody@test.com")
+        assert resp.status_code == 401
+
+    def test_get_me_success(self):
+        email = "me1@test.com"
+        with TestClient(app) as client:
+            reg_resp = self._register(client, email)
+            token = reg_resp.json()["access_token"]
+            resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["email"] == email
+        assert "id" in data
+
+    def test_get_me_no_auth(self):
+        with TestClient(app) as client:
+            resp = client.get("/api/auth/me")
+        assert resp.status_code == 401
+
+    def test_get_me_invalid_token(self):
+        with TestClient(app) as client:
+            resp = client.get("/api/auth/me", headers={"Authorization": "Bearer not.valid.token"})
+        assert resp.status_code == 401
+
+    def test_get_me_expired_token(self):
+        with TestClient(app) as client:
+            token = _make_token(9999, TEST_SECRET, expiry=-1)
+            resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 401
+
+    def test_delete_account(self):
+        email = "delme@test.com"
+        with TestClient(app) as client:
+            reg_resp = self._register(client, email)
+            token = reg_resp.json()["access_token"]
+            resp = client.delete("/api/auth/account", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 204
+
+    def test_delete_account_no_auth(self):
+        with TestClient(app) as client:
+            resp = client.delete("/api/auth/account")
+        assert resp.status_code == 401
+
+    def test_delete_account_invalid_token(self):
+        with TestClient(app) as client:
+            resp = client.delete(
+                "/api/auth/account", headers={"Authorization": "Bearer bad.token.here"}
+            )
+        assert resp.status_code == 401
+
+    def test_cannot_use_deleted_account(self):
+        email = "gone@test.com"
+        with TestClient(app) as client:
+            reg_resp = self._register(client, email)
+            token = reg_resp.json()["access_token"]
+            client.delete("/api/auth/account", headers={"Authorization": f"Bearer {token}"})
+            resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 401
+
+    def test_full_auth_flow(self):
+        with TestClient(app) as client:
+            reg_resp = client.post(
+                "/api/auth/register",
+                json={"email": "flow@test.com", "password": "flowpass12"},
+            )
+            assert reg_resp.status_code == 201
+            token = reg_resp.json()["access_token"]
+
+            login_resp = client.post(
+                "/api/auth/login",
+                json={"email": "flow@test.com", "password": "flowpass12"},
+            )
+            assert login_resp.status_code == 200
+
+            me_resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+            assert me_resp.status_code == 200
+            assert me_resp.json()["email"] == "flow@test.com"
+
+            del_resp = client.delete(
+                "/api/auth/account", headers={"Authorization": f"Bearer {token}"}
+            )
+            assert del_resp.status_code == 204
+
+            me_after = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+            assert me_after.status_code == 401
 
 
 def test_lifespan_creates_tables() -> None:

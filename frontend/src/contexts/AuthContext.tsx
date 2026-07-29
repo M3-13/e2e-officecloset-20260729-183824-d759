@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import type { UserResponse } from "../api/client";
 
 interface AuthContextType {
@@ -12,22 +19,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const TOKEN_KEY = "token";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user] = useState<UserResponse | null>(null);
-  const [loading] = useState(false);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const isAuthenticated = user !== null;
 
-  const isAuthenticated = false;
-
-  const loginFn = useCallback(async (_email: string, _password: string) => {
-    throw new Error("Not implemented");
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    import("../api/client")
+      .then((api) =>
+        api.getMe().then((u) => setUser(u))
+      )
+      .catch(() => {
+        localStorage.removeItem(TOKEN_KEY);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const registerFn = useCallback(async (_email: string, _password: string) => {
-    throw new Error("Not implemented");
+  const loginFn = useCallback(async (email: string, password: string) => {
+    const { login: apiLogin } = await import("../api/client");
+    const data = await apiLogin(email, password);
+    localStorage.setItem(TOKEN_KEY, data.access_token);
+    const { getMe } = await import("../api/client");
+    const u = await getMe();
+    setUser(u);
+  }, []);
+
+  const registerFn = useCallback(async (email: string, password: string) => {
+    const { register: apiRegister } = await import("../api/client");
+    const data = await apiRegister(email, password);
+    localStorage.setItem(TOKEN_KEY, data.access_token);
+    const { getMe } = await import("../api/client");
+    const u = await getMe();
+    setUser(u);
   }, []);
 
   const logoutFn = useCallback(() => {
-    localStorage.removeItem("token");
+    localStorage.removeItem(TOKEN_KEY);
+    setUser(null);
   }, []);
 
   return (
