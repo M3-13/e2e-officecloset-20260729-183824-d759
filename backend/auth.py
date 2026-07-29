@@ -1,10 +1,10 @@
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from config import get_config
@@ -13,9 +13,20 @@ from models import User
 from schemas import LoginRequest, TokenResponse, UserCreate, UserResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 UPLOAD_DIR = Path(__file__).parent / "uploads"
+
+
+def _hash_password(password: str) -> str:
+    password_bytes = password.encode("utf-8")
+    if len(password_bytes) > 72:
+        raise HTTPException(status_code=422, detail="Password must be at most 72 bytes")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password_bytes, salt).decode("utf-8")
+
+
+def _verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
 
 
 def _get_jwt_secret() -> str:
@@ -61,7 +72,7 @@ def register(body: UserCreate, db: Session = Depends(get_db)) -> TokenResponse:
         raise HTTPException(status_code=409, detail="Email already registered")
     user = User(
         email=body.email,
-        password_hash=pwd_context.hash(body.password),
+        password_hash=_hash_password(body.password),
     )
     db.add(user)
     db.commit()
@@ -73,7 +84,7 @@ def register(body: UserCreate, db: Session = Depends(get_db)) -> TokenResponse:
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     user = db.query(User).filter(User.email == body.email).first()
-    if user is None or not pwd_context.verify(body.password, user.password_hash):
+    if user is None or not _verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     token = create_access_token(user.id)
     return TokenResponse(access_token=token)
