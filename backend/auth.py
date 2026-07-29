@@ -1,7 +1,6 @@
 import logging
 import os
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -9,7 +8,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from config import get_config
+from config import UPLOAD_DIR, get_config
 from database import get_db
 from models import User
 from schemas import LoginRequest, TokenResponse, UserCreate, UserResponse
@@ -20,8 +19,6 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 security = HTTPBearer()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-UPLOAD_DIR = Path(__file__).parent / "uploads"
 
 
 def _create_token(user_id: int) -> str:
@@ -120,7 +117,7 @@ def delete_account(
 
 def _delete_image_file(image_path: str) -> None:
     try:
-        full_path = UPLOAD_DIR / Path(image_path).name
+        full_path = UPLOAD_DIR / image_path
         if full_path.exists():
             os.remove(full_path)
     except OSError:

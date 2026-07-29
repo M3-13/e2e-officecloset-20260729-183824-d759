@@ -39,6 +39,11 @@ class ClothingItemCreate(BaseModel):
     category: str
     note: str | None = None
 
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return _validate_name(v)
+
 
 class ClothingItemResponse(BaseModel):
     id: int

@@ -148,7 +148,7 @@ def update_item(
         new_path = save_image(image)
         item.image_path = new_path
         try:
-            old_file = UPLOAD_DIR.parent / old_path
+            old_file = UPLOAD_DIR / old_path
             if old_file.exists():
                 old_file.unlink()
         except OSError:
@@ -175,7 +175,7 @@ def delete_item(
     db.commit()
 
     try:
-        img_file = UPLOAD_DIR.parent / image_path
+        img_file = UPLOAD_DIR / image_path
         if img_file.exists():
             img_file.unlink()
     except OSError:

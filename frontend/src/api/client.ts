@@ -110,12 +110,20 @@ export async function getItem(id: number): Promise<ClothingItemResponse> {
 
 export async function updateItem(
   id: number,
-  data: { name: string; category: string; note?: string | null }
+  formData: FormData
 ): Promise<ClothingItemResponse> {
-  return apiFetch<ClothingItemResponse>(`/api/wardrobe/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  const token = localStorage.getItem("token");
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const url = `${API_BASE}/api/wardrobe/${id}`;
+  const response = await fetch(url, { method: "PUT", headers, body: formData });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(errorBody || `Request failed with status ${response.status}`);
+  }
+  return response.json();
 }
 
 export async function deleteItem(id: number): Promise<void> {
@@ -124,7 +132,7 @@ export async function deleteItem(id: number): Promise<void> {
 
 export async function createOutfit(data: {
   name: string;
-  item_ids: number[];
+  clothing_item_ids: number[];
 }): Promise<OutfitResponse> {
   return apiFetch<OutfitResponse>("/api/outfits/", {
     method: "POST",
@@ -142,7 +150,7 @@ export async function getOutfit(id: number): Promise<OutfitResponse> {
 
 export async function updateOutfit(
   id: number,
-  data: { name?: string; item_ids?: number[] }
+  data: { name?: string; clothing_item_ids?: number[] }
 ): Promise<OutfitResponse> {
   return apiFetch<OutfitResponse>(`/api/outfits/${id}`, {
     method: "PUT",

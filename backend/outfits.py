@@ -1,11 +1,9 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session, joinedload
 
-from config import get_config
+from auth import get_current_user
 from database import get_db
 from models import ClothingItem, Outfit, OutfitItem, User
 from schemas import ClothingItemResponse, OutfitCreate, OutfitResponse, OutfitUpdate
@@ -13,28 +11,6 @@ from schemas import ClothingItemResponse, OutfitCreate, OutfitResponse, OutfitUp
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/outfits", tags=["outfits"])
-security = HTTPBearer()
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db),
-) -> User:
-    config = get_config()
-    secret = config.get("JWT_SECRET", "")
-    if not secret:
-        raise HTTPException(status_code=500, detail="JWT_SECRET not configured")
-
-    try:
-        payload = jwt.decode(credentials.credentials, secret, algorithms=["HS256"])
-        user_id: int = int(payload["sub"])
-    except (JWTError, KeyError, ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials") from None
-
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    return user
 
 
 def _validate_and_fetch_items(

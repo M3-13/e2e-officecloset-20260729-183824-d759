@@ -9,11 +9,11 @@ from starlette.requests import Request
 
 import models  # noqa: F401  ensure models are registered on metadata before create_all
 from auth import router as auth_router
+from config import UPLOAD_DIR
 from database import Base, get_engine
 from outfits import router as outfits_router
 from wardrobe import router as wardrobe_router
 
-UPLOAD_DIR = Path(__file__).parent / "uploads"
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "dist"
 
 UPLOAD_DIR.mkdir(exist_ok=True)
