@@ -1,9 +1,17 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    privacy_accepted: bool
+
+    @field_validator("privacy_accepted")
+    @classmethod
+    def must_be_accepted(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("Privacy policy must be accepted")
+        return v
 
 
 class UserResponse(BaseModel):

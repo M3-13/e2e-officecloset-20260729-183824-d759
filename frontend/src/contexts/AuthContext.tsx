@@ -1,33 +1,57 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { UserResponse } from "../api/client";
+import { login as apiLogin, register as apiRegister, getMe } from "../api/client";
 
 interface AuthContextType {
   user: UserResponse | null;
   loading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, privacyAccepted: boolean) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user] = useState<UserResponse | null>(null);
-  const [loading] = useState(false);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const isAuthenticated = false;
-
-  const loginFn = useCallback(async (_email: string, _password: string) => {
-    throw new Error("Not implemented");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    getMe()
+      .then((u) => {
+        setUser(u);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  const registerFn = useCallback(async (_email: string, _password: string) => {
-    throw new Error("Not implemented");
+  const loginFn = useCallback(async (email: string, password: string) => {
+    const data = await apiLogin(email, password);
+    localStorage.setItem("token", data.access_token);
+    const u = await getMe();
+    setUser(u);
+  }, []);
+
+  const registerFn = useCallback(async (email: string, password: string, privacyAccepted: boolean) => {
+    const data = await apiRegister(email, password, privacyAccepted);
+    localStorage.setItem("token", data.access_token);
+    const u = await getMe();
+    setUser(u);
   }, []);
 
   const logoutFn = useCallback(() => {
     localStorage.removeItem("token");
+    setUser(null);
   }, []);
 
   return (
@@ -35,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
-        isAuthenticated,
+        isAuthenticated: user !== null,
         login: loginFn,
         register: registerFn,
         logout: logoutFn,

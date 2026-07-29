@@ -58,11 +58,12 @@ export interface OutfitResponse {
 
 export async function register(
   email: string,
-  password: string
+  password: string,
+  privacyAccepted: boolean,
 ): Promise<TokenResponse> {
   return apiFetch<TokenResponse>("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, privacy_accepted: privacyAccepted }),
   });
 }
 
