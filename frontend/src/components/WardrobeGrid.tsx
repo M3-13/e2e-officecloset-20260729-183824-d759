@@ -10,8 +10,7 @@ interface WardrobeGridProps {
 function getImageUrl(imagePath: string): string {
   if (imagePath.startsWith("http")) return imagePath;
   const base = import.meta.env.VITE_API_URL || "";
-  const normalizedPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-  return `${base}${normalizedPath}`;
+  return `${base}/static/${imagePath}`;
 }
 
 function WardrobeCard({ item }: { item: ClothingItemResponse }) {
