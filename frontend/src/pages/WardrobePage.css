@@ -1,0 +1,98 @@
+.wardrobe-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+  animation: wardrobeFadeIn 0.35s ease-out;
+}
+
+@keyframes wardrobeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wardrobe-page__header {
+  margin-bottom: var(--space-4);
+}
+
+.wardrobe-page__title {
+  font-family: var(--font-heading);
+  font-size: var(--size-3xl);
+  font-weight: 600;
+  color: var(--color-fg);
+  letter-spacing: 0.03em;
+}
+
+.wardrobe-page .category-filter {
+  margin-bottom: var(--space-5);
+}
+
+.wardrobe-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  min-height: 400px;
+}
+
+.wardrobe-page__empty-icon {
+  font-size: 3.5rem;
+  color: var(--color-accent);
+  margin-bottom: var(--space-4);
+  text-shadow: 0 0 30px var(--color-glow);
+  animation: emptyStarPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes emptyStarPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.wardrobe-page__empty-title {
+  font-family: var(--font-heading);
+  font-size: var(--size-2xl);
+  font-weight: 600;
+  color: var(--color-fg);
+  margin-bottom: var(--space-2);
+}
+
+.wardrobe-page__empty-text {
+  font-family: var(--font-body);
+  font-size: var(--size-base);
+  color: var(--color-muted);
+  max-width: 400px;
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .wardrobe-page {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .wardrobe-page__title {
+    font-size: var(--size-2xl);
+  }
+
+  .wardrobe-page__empty {
+    min-height: 300px;
+    padding: var(--space-6) var(--space-3);
+  }
+
+  .wardrobe-page__empty-title {
+    font-size: var(--size-xl);
+  }
+}
